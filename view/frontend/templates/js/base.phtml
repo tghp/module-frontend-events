@@ -1,26 +1,40 @@
 <?php
 /**
  * @var $block \TGHP\FrontendEvents\Block\Js\Base
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
  */
 $contextJson = $block->getContextJson();
-?>
-<script type="text/javascript">
-require([
-	'frontendEventManager'
+$script = <<<script
+    require([
+'frontendEventManager'
 ], function (
-	eventManager
+eventManager
 ) {
-    var controllerData = <?php if ($contextJson): echo $contextJson; else: echo '{}'; endif ?>;
-    eventManager.dispatchEvent('controller_action_frontend', controllerData);
-	eventManager.dispatchEvent('controller_action_frontend_<?php echo $block->getRouteName() ?>', controllerData);
-	eventManager.dispatchEvent('controller_action_frontend_<?php echo $block->getFullActionName() ?>', controllerData);
+script;
 
-	eventManager.addObserver('*', function (data, eventName) {
-        console.log('[EVENT] ' + eventName);
-        this.resolve();
-	});
+$script .= <<<script
+var controllerData = {};
+script;
+if ($contextJson):
+    $script .= <<<script
+       controllerData = {$contextJson};
+script;
+endif;
+$script .= <<<script
+eventManager.dispatchEvent('controller_action_frontend', controllerData);
+eventManager.dispatchEvent('controller_action_frontend_{$block->getRouteName()}', controllerData);
+eventManager.dispatchEvent('controller_action_frontend_{$block->getFullActionName()}', controllerData);
+
+eventManager.addObserver('*', function (data, eventName) {
+console.log('[EVENT] ' + eventName);
+this.resolve();
+});
 })
-</script>
+script;
+?>
+
+<?= /* @noEscape */ $secureRenderer->renderTag('script', [], $script, false); ?>
+
 <script type="text/x-magento-init">
     <?php echo $block->getGlobalComponentsConfigJson() ?>
 </script>
